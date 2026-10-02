@@ -1,73 +1,68 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo_text.svg" width="320" alt="Nest Logo" /></a>
-</p>
+﻿# Cryo Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Архивный backend проекта Cryo — прототипа площадки для продажи и аренды оборудования с учётом владения и операций в блокчейне. Репозиторий сохранён как историческая версия проекта; готовность к промышленной эксплуатации и работоспособность прежней тестовой инфраструктуры не гарантируются.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Назначение
 
-## Description
+Backend предоставляет HTTP API для взаимодействия со смарт-контрактами: создания единиц оборудования с количеством и роялти, размещения предложений, покупки, начала, оплаты и завершения аренды. Отдельный модуль обслуживает кошельки и токен CYCO: создание аккаунтов, получение балансов, переводы, заморозку токенов и разрешения на списание.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+По реализации это серверная прослойка между клиентским приложением и блокчейном. Сервис читает состояние контрактов, оценивает комиссию, подписывает транзакции переданным приватным ключом и отправляет их в сеть. Собственной базы данных в исходниках нет.
 
-## Installation
+## Смарт-контракты в BSC Testnet
 
-```bash
-$ npm install
+| Контракт | Назначение | Адрес |
+| --- | --- | --- |
+| CRYO | Учёт оборудования, предложения, покупка и аренда | [`0x9E088e08b6510ac6386ac48F6783fE7794eE688c`](https://testnet.bscscan.com/address/0x9E088e08b6510ac6386ac48F6783fE7794eE688c) |
+| CYCO | Токен: балансы, переводы, заморозка и разрешения | [`0x06d5414a884c959B61Fb6Da91c15722604b30353`](https://testnet.bscscan.com/address/0x06d5414a884c959B61Fb6Da91c15722604b30353) |
+
+ABI обоих контрактов находятся в [`src/wallets_contracts.ts`](src/wallets_contracts.ts)
+
+## Стек и структура
+
+- TypeScript 4, NestJS 8 и Express.
+- Web3.js 1.7 для взаимодействия с блокчейном.
+- `class-validator` и `class-transformer` для проверки входных данных.
+- Node.js `cluster` для запуска нескольких процессов.
+
+```text
+src/
+  main.ts                  HTTP-сервер, префикс API и CORS
+  app.module.ts            Подключение модулей и env-конфигурации
+  equipment/               Операции с оборудованием и арендой
+  wallet/                  Кошельки и операции с CYCO
+  web3/                    Подключение к сети и подпись транзакций
+  wallets_contracts.ts     ABI и адреса из переменных окружения
+  dto/                     DTO операций с токенами
+  pipes/                   Валидация запросов
+  exceptions/              Ошибки API
+  utils/runInCluster.ts    Запуск и перезапуск рабочих процессов
 ```
 
-## Running the app
+## Локальный запуск
+
+Потребуются Node.js, npm, настроенный провайдер BSC Testnet и тестовые средства для оплаты транзакций. В репозитории нет закреплённой версии Node.js; зависимости относятся к поколению NestJS 8 и типов Node.js 16.
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install
+npm run start:dev
 ```
 
-## Test
+**Особенность архивной версии:** исходники импортируют `@nestjs/config`, но пакет не указан в `package.json`. Для восстановления запуска нужно добавить совместимую с NestJS 8 версию зависимости. Приведённые команды сами по себе эту проблему не устраняют.
+
+API слушает порт `3000`, базовый адрес — `http://localhost:3000/api`. Порт задан в коде. В разработке CORS разрешает `http://localhost:3000`; для production список origins оставлен незаполненным (`['']`).
+
+Другие команды:
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run build        # Сборка в dist/
+npm run start:prod   # Запуск сборки с NODE_ENV=production
+npm run start:debug  # Запуск с отладчиком и наблюдением за файлами
 ```
 
-## Support
+## Особенности архивной реализации
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+API принимает приватные ключи и подписывает транзакции на сервере, а endpoint создания кошелька возвращает приватный ключ клиенту. Это часть сохранённой архитектуры прототипа; при восстановлении проекта для реального использования необходимо пересмотреть хранение и передачу ключей, а также защиту API. Отдельного слоя аутентификации в контроллерах нет.
 
-## Stay in touch
+Форматы ответов неоднородны: некоторые операции возвращают `true` или `{success: true}`, другие не возвращают тело. В `/equipment/create` поле `id` содержит receipt транзакции, а не выделенный идентификатор оборудования.
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
+В `package.json` остались команды Jest, однако файлов тестов и каталога `test/` в репозитории нет. Команда `test:e2e` ссылается на отсутствующий `test/jest-e2e.json`. Это архив исходников, а не подтверждение прохождения тестов или воспроизводимого запуска.
